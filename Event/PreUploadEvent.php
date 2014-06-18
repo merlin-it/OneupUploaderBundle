@@ -13,14 +13,16 @@ class PreUploadEvent extends Event
     protected $type;
     protected $response;
     protected $config;
+    protected $field;
 
-    public function __construct($file, ResponseInterface $response, Request $request, $type, array $config)
+    public function __construct($file, ResponseInterface $response, Request $request, $type, array $config, $field)
     {
         $this->file = $file;
         $this->request = $request;
         $this->response = $response;
         $this->type = $type;
         $this->config = $config;
+        $this->field = $field;
     }
 
     public function getFile()
@@ -46,5 +48,10 @@ class PreUploadEvent extends Event
     public function getConfig()
     {
         return $this->config;
+    }
+
+    public function getField()
+    {
+        return $this->field;
     }
 }

@@ -82,12 +82,12 @@ abstract class AbstractController
         $fileBag = $bag->all();
         $fileIterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($fileBag), \RecursiveIteratorIterator::SELF_FIRST);
 
-        foreach ($fileIterator as $file) {
+        foreach ($fileIterator as $field => $file) {
             if (is_array($file) || null === $file) {
                 continue;
             }
 
-            $files[] = $file;
+            $files[$field] = $file;
         }
 
         return $files;
@@ -103,8 +103,9 @@ abstract class AbstractController
      *  @param The file to upload
      *  @param response A response object.
      *  @param request The request object.
+     *  @param $field - The form field name, if available.
      */
-    protected function handleUpload($file, ResponseInterface $response, Request $request)
+    protected function handleUpload($file, ResponseInterface $response, Request $request, $field = null)
     {
         // wrap the file if it is not done yet which can only happen
         // if it wasn't a chunked upload, in which case it is definitely
@@ -112,9 +113,9 @@ abstract class AbstractController
         if (!($file instanceof FileInterface)) {
             $file = new FilesystemFile($file);
         }
-        $this->validate($file);
+        $this->validate($file, $field);
 
-        $this->dispatchPreUploadEvent($file, $response, $request);
+        $this->dispatchPreUploadEvent($file, $response, $request, $field);
 
         // no error happend, proceed
         $namer = $this->container->get($this->config['namer']);
@@ -123,7 +124,7 @@ abstract class AbstractController
         // perform the real upload
         $uploaded = $this->storage->upload($file, $name);
 
-        $this->dispatchPostEvents($uploaded, $response, $request);
+        $this->dispatchPostEvents($uploaded, $response, $request, $field);
     }
 
     /**
@@ -133,12 +134,12 @@ abstract class AbstractController
      *  @param response A response object.
      *  @param request The request object.
      */
-    protected function dispatchPreUploadEvent(FileInterface $uploaded, ResponseInterface $response, Request $request)
+    protected function dispatchPreUploadEvent(FileInterface $uploaded, ResponseInterface $response, Request $request, $field)
     {
         $dispatcher = $this->container->get('event_dispatcher');
 
         // dispatch pre upload event (both the specific and the general)
-        $postUploadEvent = new PreUploadEvent($uploaded, $response, $request, $this->type, $this->config);
+        $postUploadEvent = new PreUploadEvent($uploaded, $response, $request, $this->type, $this->config, $field);
         $dispatcher->dispatch(UploadEvents::PRE_UPLOAD, $postUploadEvent);
         $dispatcher->dispatch(sprintf('%s.%s', UploadEvents::PRE_UPLOAD, $this->type), $postUploadEvent);
     }
@@ -151,27 +152,27 @@ abstract class AbstractController
      *  @param response A response object.
      *  @param request The request object.
      */
-    protected function dispatchPostEvents($uploaded, ResponseInterface $response, Request $request)
+    protected function dispatchPostEvents($uploaded, ResponseInterface $response, Request $request, $field)
     {
         $dispatcher = $this->container->get('event_dispatcher');
 
         // dispatch post upload event (both the specific and the general)
-        $postUploadEvent = new PostUploadEvent($uploaded, $response, $request, $this->type, $this->config);
+        $postUploadEvent = new PostUploadEvent($uploaded, $response, $request, $this->type, $this->config, $field);
         $dispatcher->dispatch(UploadEvents::POST_UPLOAD, $postUploadEvent);
         $dispatcher->dispatch(sprintf('%s.%s', UploadEvents::POST_UPLOAD, $this->type), $postUploadEvent);
 
         if (!$this->config['use_orphanage']) {
             // dispatch post persist event (both the specific and the general)
-            $postPersistEvent = new PostPersistEvent($uploaded, $response, $request, $this->type, $this->config);
+            $postPersistEvent = new PostPersistEvent($uploaded, $response, $request, $this->type, $this->config, $field);
             $dispatcher->dispatch(UploadEvents::POST_PERSIST, $postPersistEvent);
             $dispatcher->dispatch(sprintf('%s.%s', UploadEvents::POST_PERSIST, $this->type), $postPersistEvent);
         }
     }
 
-    protected function validate(FileInterface $file)
+    protected function validate(FileInterface $file, $field)
     {
         $dispatcher = $this->container->get('event_dispatcher');
-        $event = new ValidationEvent($file, $this->container->get('request'), $this->config, $this->type);
+        $event = new ValidationEvent($file, $this->container->get('request'), $this->config, $this->type, $field);
 
         $dispatcher->dispatch(UploadEvents::VALIDATION, $event);
     }

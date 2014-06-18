@@ -20,11 +20,11 @@ class FineUploaderController extends AbstractChunkedController
         $files = $this->getFiles($request->files);
         $chunked = $totalParts > 1;
 
-        foreach ($files as $file) {
+        foreach ($files as $field => $file) {
             try {
                 $chunked ?
-                    $this->handleChunkedUpload($file, $response, $request) :
-                    $this->handleUpload($file, $response, $request)
+                    $this->handleChunkedUpload($file, $response, $request, $field) :
+                    $this->handleUpload($file, $response, $request, $field)
                 ;
             } catch (UploadException $e) {
                 $response->setSuccess(false);

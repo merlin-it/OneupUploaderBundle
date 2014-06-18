@@ -41,8 +41,9 @@ abstract class AbstractChunkedController extends AbstractController
      * @param UploadedFile      $file     - The uploaded chunk.
      * @param ResponseInterface $response - A response object.
      * @param Request           $request  - The request object.
+     * @param string            $field    - The form field name, if available.
      */
-    protected function handleChunkedUpload(UploadedFile $file, ResponseInterface $response, Request $request)
+    protected function handleChunkedUpload(UploadedFile $file, ResponseInterface $response, Request $request, $field = null)
     {
         // get basic container stuff
         $request = $this->container->get('request');
@@ -54,7 +55,7 @@ abstract class AbstractChunkedController extends AbstractController
         $chunk = $chunkManager->addChunk($uuid, $index, $file, $orig);
 
         if (null !== $chunk) {
-            $this->dispatchChunkEvents($chunk, $response, $request, $last);
+            $this->dispatchChunkEvents($chunk, $response, $request, $last, $field);
         }
 
         if ($chunkManager->getLoadDistribution()) {
@@ -62,7 +63,7 @@ abstract class AbstractChunkedController extends AbstractController
             $assembled = $chunkManager->assembleChunks($chunks, true, $last);
 
             if (null === $chunk) {
-                $this->dispatchChunkEvents($assembled, $response, $request, $last);
+                $this->dispatchChunkEvents($assembled, $response, $request, $last, $field);
             }
         }
 
@@ -76,7 +77,7 @@ abstract class AbstractChunkedController extends AbstractController
 
             $path = $assembled->getPath();
 
-            $this->handleUpload($assembled, $response, $request);
+            $this->handleUpload($assembled, $response, $request, $field);
 
             $chunkManager->cleanup($path);
         }
@@ -89,13 +90,14 @@ abstract class AbstractChunkedController extends AbstractController
      * @param ResponseInterface $response - A response object.
      * @param Request           $request  - The request object.
      * @param bool              $isLast   - True if this is the last chunk, false otherwise.
+     * @param string            $field    - The form field name, if available.
      */
-    protected function dispatchChunkEvents($uploaded, ResponseInterface $response, Request $request, $isLast)
+    protected function dispatchChunkEvents($uploaded, ResponseInterface $response, Request $request, $isLast, $field)
     {
         $dispatcher = $this->container->get('event_dispatcher');
 
         // dispatch post upload event (both the specific and the general)
-        $postUploadEvent = new PostChunkUploadEvent($uploaded, $response, $request, $isLast, $this->type, $this->config);
+        $postUploadEvent = new PostChunkUploadEvent($uploaded, $response, $request, $isLast, $this->type, $this->config, $field);
         $dispatcher->dispatch(UploadEvents::POST_CHUNK_UPLOAD, $postUploadEvent);
         $dispatcher->dispatch(sprintf('%s.%s', UploadEvents::POST_CHUNK_UPLOAD, $this->type), $postUploadEvent);
     }

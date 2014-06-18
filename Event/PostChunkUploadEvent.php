@@ -14,8 +14,9 @@ class PostChunkUploadEvent extends Event
     protected $response;
     protected $config;
     protected $isLast;
+    protected $field;
 
-    public function __construct($chunk, ResponseInterface $response, Request $request, $isLast, $type, array $config)
+    public function __construct($chunk, ResponseInterface $response, Request $request, $isLast, $type, array $config, $field)
     {
         $this->chunk = $chunk;
         $this->request = $request;
@@ -23,6 +24,7 @@ class PostChunkUploadEvent extends Event
         $this->isLast = $isLast;
         $this->type = $type;
         $this->config = $config;
+        $this->field = $field;
     }
 
     public function getChunk()
@@ -58,5 +60,10 @@ class PostChunkUploadEvent extends Event
     public function isLast()
     {
         return $this->isLast;
+    }
+
+    public function getField()
+    {
+        return $this->field;
     }
 }
