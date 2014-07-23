@@ -39,7 +39,7 @@ abstract class AbstractController
     public function progress()
     {
         $request = $this->container->get('request');
-        $session = $this->container->get('session');
+        $session = \Session::getInstance();
 
         $prefix = ini_get('session.upload_progress.prefix');
         $name   = ini_get('session.upload_progress.name');
@@ -55,7 +55,7 @@ abstract class AbstractController
     public function cancel()
     {
         $request = $this->container->get('request');
-        $session = $this->container->get('session');
+        $session = \Session::getInstance();
 
         $prefix = ini_get('session.upload_progress.prefix');
         $name   = ini_get('session.upload_progress.name');

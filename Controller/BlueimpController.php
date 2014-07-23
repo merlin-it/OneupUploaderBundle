@@ -35,7 +35,7 @@ class BlueimpController extends AbstractChunkedController
     public function progress()
     {
         $request = $this->container->get('request');
-        $session = $this->container->get('session');
+        $session = \Session::getInstance();
 
         $prefix = ini_get('session.upload_progress.prefix');
         $name   = ini_get('session.upload_progress.name');
@@ -55,7 +55,7 @@ class BlueimpController extends AbstractChunkedController
 
     protected function parseChunkedRequest(Request $request)
     {
-        $session = $this->container->get('session');
+        $session = \Session::getInstance();
         $headerRange = $request->headers->get('content-range');
         $attachmentName = rawurldecode(preg_replace('/(^[^"]+")|("$)/', '', $request->headers->get('content-disposition')));
 
@@ -76,7 +76,7 @@ class BlueimpController extends AbstractChunkedController
         // it is possible, that two clients send a file with the
         // exact same filename, therefore we have to add the session
         // to the uuid otherwise we will get a mess
-        $uuid  = md5(sprintf('%s.%s', $attachmentName, $session->getId()));
+        $uuid  = md5(sprintf('%s.%s', $attachmentName, session_id()));
         $orig  = $attachmentName;
 
         return array($last, $uuid, $index, $orig);
